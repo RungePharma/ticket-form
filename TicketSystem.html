@@ -35,14 +35,19 @@
     input[type="radio"],input[type="checkbox"]{accent-color:var(--g);}
     .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
     .pzone{border:2px dashed var(--bd);border-radius:10px;padding:22px;text-align:center;color:var(--mu);font-size:13px;background:var(--bg);cursor:pointer;}
+    .pzone:hover{border-color:var(--g);background:var(--gl);}
     .pzone.has{border-color:var(--g);background:var(--gl);}
     .file-list{margin-top:10px;font-size:12px;color:var(--tx);}
-    .file-item{background:white;border:1px solid var(--bd);padding:7px 10px;border-radius:7px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
-    .file-meta{display:flex;align-items:center;gap:10px;min-width:0;}
-    .file-thumb{width:54px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);background:var(--bg);flex-shrink:0;}
-    .file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .file-placeholder{width:54px;height:54px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
-    .preview-btn{border:0;background:transparent;padding:0;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+    .file-item{background:white;border:1px solid var(--bd);padding:9px 10px;border-radius:7px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;}
+    .file-main{display:flex;align-items:center;gap:10px;min-width:0;flex:1;}
+    .file-meta{min-width:0;flex:1;}
+    .file-thumb{width:78px;height:58px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);background:#fff;flex-shrink:0;}
+    .file-thumb-pdf{object-fit:initial;overflow:hidden;pointer-events:none;}
+    .file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+    .file-sub{font-size:11.5px;color:var(--mu);margin-top:2px;}
+    .file-placeholder{width:78px;height:58px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+    .file-text-thumb{width:78px;height:58px;border-radius:6px;border:1px solid var(--bd);background:#fff;padding:5px;overflow:hidden;font:8px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--tx);white-space:pre-wrap;word-break:break-word;flex-shrink:0;}
+    .preview-btn{border:0;background:transparent;padding:0;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
     .preview-btn:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
     .preview-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:clamp(18px,4vw,48px);background:rgba(10,18,22,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
     .preview-modal.hidden{display:none;}
@@ -65,7 +70,7 @@
     .success h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin:14px 0 8px;}
     .success p{color:var(--mu);font-size:13.5px;line-height:1.6;max-width:420px;margin-bottom:20px;}
     .hidden{display:none;}
-    @media(max-width:700px){.dgrid{grid-template-columns:1fr}.content{padding:18px}}
+    @media(max-width:700px){.dgrid{grid-template-columns:1fr}.content{padding:18px}.inline-preview{max-width:100%}}
   </style>
 </head>
 
@@ -313,28 +318,64 @@
       return `${size.toFixed(size >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
     }
 
+    function loadTextThumb(file, i) {
+      const target = $(`textThumb_${i}`);
+      if (!target) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = String(reader.result || "").trim();
+        target.textContent = text ? text.slice(0, 180) + (text.length > 180 ? "…" : "") : "Leere Textdatei";
+      };
+      reader.onerror = () => {
+        target.textContent = "Keine Textvorschau";
+      };
+      reader.readAsText(file);
+    }
+
+    function getPreviewThumb(file, i, kind, fileName) {
+      const url = URL.createObjectURL(file);
+
+      if (kind === "image") {
+        return `<img class="file-thumb" src="${url}" alt="Vorschau von ${fileName}" />`;
+      }
+
+      if (kind === "pdf") {
+        return `<iframe class="file-thumb file-thumb-pdf" src="${url}#toolbar=0&navpanes=0&scrollbar=0&page=1&view=FitH" title="PDF-Vorschau von ${fileName}"></iframe>`;
+      }
+
+      if (kind === "text") {
+        return `<div class="file-text-thumb" id="textThumb_${i}">Text wird geladen…</div>`;
+      }
+
+      return `<div class="file-placeholder" title="Vorschau öffnen">${getFileIcon(file)}</div>`;
+    }
+
     function renderFileList() {
       $("fileList").innerHTML = files.map((file, i) => {
         const kind = getFileKind(file);
-        const isImage = kind === "image";
         const fileName = escapeHtml(file.name || "Anhang");
-        const previewThumb = isImage
-          ? `<img class="file-thumb" src="${URL.createObjectURL(file)}" alt="Vorschau von ${fileName}" />`
-          : `<div class="file-placeholder" title="Vorschau öffnen">${getFileIcon(file)}</div>`;
+        const previewThumb = getPreviewThumb(file, i, kind, fileName);
 
         return `
           <div class="file-item">
-            <div class="file-meta">
-              <button type="button" class="preview-btn" onclick="openPreview(${i})" title="Vorschau öffnen" aria-label="${fileName} als Vorschau öffnen">
-                ${previewThumb}
-              </button>
-              <span class="file-name">${fileName}</span>
+            <button type="button" class="preview-btn" onclick="openPreview(${i})" title="Vorschau öffnen" aria-label="${fileName} als Vorschau öffnen">
+              ${previewThumb}
+            </button>
+            <div class="file-main" onclick="openPreview(${i})" title="Vorschau öffnen">
+              <div class="file-meta">
+                <div class="file-name">${fileName}</div>
+                <div class="file-sub">${formatFileSize(file.size)} · anklicken zum Vergrößern</div>
+              </div>
             </div>
             <button type="button" class="remove" onclick="removeFile(${i})">x</button>
           </div>
         `;
       }).join("");
 
+      files.forEach((file, i) => {
+        if (getFileKind(file) === "text") loadTextThumb(file, i);
+      });
       $("dropzone").classList.toggle("has", files.length > 0);
     }
 
@@ -473,6 +514,12 @@
 
     $("fileInput").addEventListener("change", e => {
       addFiles(e.target.files);
+      e.target.value = "";
+    });
+
+    $("dropzone").addEventListener("click", e => {
+      if (e.target.closest(".file-item") || e.target.closest("label") || e.target.closest("button")) return;
+      $("fileInput").click();
     });
 
     $("dropzone").addEventListener("dragover", e => {
