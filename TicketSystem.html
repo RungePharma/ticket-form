@@ -27,7 +27,7 @@
     .req{color:#ef4444;margin-left:2px;}
     .inp{width:100%;padding:9px 13px;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:13.5px;background:var(--wh);color:var(--tx);outline:none;}
     .inp:focus{border-color:var(--g);}
-    textarea.inp{min-height:90px;resize:vertical;}
+    textarea.inp{min-height:150px;resize:vertical;}
     .rg,.cg{display:flex;flex-direction:column;gap:6px;}
     .rw,.cw{display:flex;align-items:center;gap:9px;cursor:pointer;padding:7px 11px;border-radius:8px;border:1.5px solid var(--bd);font-size:13.5px;}
     .rw:hover,.cw:hover{border-color:var(--g);background:var(--gl);}
@@ -37,7 +37,18 @@
     .pzone{border:2px dashed var(--bd);border-radius:10px;padding:22px;text-align:center;color:var(--mu);font-size:13px;background:var(--bg);cursor:pointer;}
     .pzone.has{border-color:var(--g);background:var(--gl);}
     .file-list{margin-top:10px;font-size:12px;color:var(--tx);}
-    .file-item{background:white;border:1px solid var(--bd);padding:7px 10px;border-radius:7px;margin-top:6px;display:flex;justify-content:space-between;gap:10px;}
+    .file-item{background:white;border:1px solid var(--bd);padding:7px 10px;border-radius:7px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .file-meta{display:flex;align-items:center;gap:10px;min-width:0;}
+    .file-thumb{width:54px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);background:var(--bg);flex-shrink:0;}
+    .file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .file-placeholder{width:54px;height:54px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+    .preview-btn{border:0;background:transparent;padding:0;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+    .preview-btn:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
+    .preview-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:clamp(18px,4vw,48px);background:rgba(10,18,22,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+    .preview-modal.hidden{display:none;}
+    .preview-card{position:relative;display:flex;align-items:center;justify-content:center;max-width:92vw;max-height:82vh;background:#111;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:8px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden;}
+    .preview-card img{display:block;width:auto;height:auto;max-width:calc(92vw - 16px);max-height:calc(82vh - 16px);border-radius:9px;background:#fff;object-fit:contain;user-select:none;}
+    .preview-close{position:fixed;top:22px;right:22px;width:38px;height:38px;border:0;border-radius:50%;background:white;color:var(--tx);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 8px 26px rgba(0,0,0,.28);z-index:10000;}
     .remove{border:0;background:#ef4444;color:white;border-radius:5px;padding:2px 7px;cursor:pointer;}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;}
     .btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -86,7 +97,7 @@
             <label class="lbl">Art des Anliegens<span class="req">*</span></label>
             <div class="rg">
               <label class="rw"><input type="radio" name="type" value="🔧 Technische Störung" required /> 🔧 Technische Störung</label>
-              <label class="rw"><input type="radio" name="type" value="💻 Gerät ausleihen" /> 💻 Gerät ausleihen / Wunsch</label>
+              <label class="rw"><input type="radio" name="type" value="💻 Gerät ausleihen" /> 💻 Gerät ausleihen</label>
               <label class="rw"><input type="radio" name="type" value="💡 Änderung / Anfrage" /> 💡 Änderung / Anfrage</label>
             </div>
           </div>
@@ -186,6 +197,13 @@
     </div>
   </div>
 
+  <div id="previewModal" class="preview-modal hidden" aria-hidden="true">
+    <div class="preview-card" role="dialog" aria-modal="true" aria-label="Bildvorschau">
+      <button type="button" class="preview-close" id="previewClose" aria-label="Vorschau schließen">×</button>
+      <img id="previewImage" alt="Große Bildvorschau" />
+    </div>
+  </div>
+
   <script>
     const SB_URL = "https://kdbwpftahhkufzynmifd.supabase.co";
     const SB_KEY = "sb_publishable_figCNfCQKXOVpPWXgAuMJA_DZ7lTiOq";
@@ -210,6 +228,15 @@
 
     function getChecks(name) {
       return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x => x.value);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
     function showError(msg) {
@@ -245,15 +272,53 @@
     }
 
     function renderFileList() {
-      $("fileList").innerHTML = files.map((file, i) => `
-        <div class="file-item">
-          <span>${file.name}</span>
-          <button type="button" class="remove" onclick="removeFile(${i})">x</button>
-        </div>
-      `).join("");
+      $("fileList").innerHTML = files.map((file, i) => {
+        const isImage = file.type?.startsWith("image/");
+        const fileName = escapeHtml(file.name || "Screenshot");
+        const preview = isImage
+          ? `<button type="button" class="preview-btn" onclick="openPreview(${i})" title="Bild groß anzeigen" aria-label="${fileName} groß anzeigen">
+               <img class="file-thumb" src="${URL.createObjectURL(file)}" alt="Vorschau von ${fileName}" />
+             </button>`
+          : `<div class="file-placeholder" title="Keine Bildvorschau verfügbar">📄</div>`;
+
+        return `
+          <div class="file-item">
+            <div class="file-meta">
+              ${preview}
+              <span class="file-name">${fileName}</span>
+            </div>
+            <button type="button" class="remove" onclick="removeFile(${i})">x</button>
+          </div>
+        `;
+      }).join("");
 
       $("dropzone").classList.toggle("has", files.length > 0);
     }
+
+    window.openPreview = function(i) {
+      const file = files[i];
+      if (!file || !file.type?.startsWith("image/")) return;
+
+      $("previewImage").src = URL.createObjectURL(file);
+      $("previewImage").alt = file.name ? `Große Vorschau von ${file.name}` : "Große Bildvorschau";
+      $("previewModal").classList.remove("hidden");
+      $("previewModal").setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    };
+
+    function closePreview() {
+      $("previewModal").classList.add("hidden");
+      $("previewModal").setAttribute("aria-hidden", "true");
+      $("previewImage").removeAttribute("src");
+      document.body.style.overflow = "";
+    }
+
+    $("previewClose").addEventListener("click", closePreview);
+    document.querySelector(".preview-card").addEventListener("click", e => e.stopPropagation());
+    $("previewModal").addEventListener("click", closePreview);
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && !$("previewModal").classList.contains("hidden")) closePreview();
+    });
 
     window.removeFile = function(i) {
       files.splice(i, 1);
