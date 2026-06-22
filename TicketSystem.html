@@ -46,8 +46,14 @@
     .preview-btn:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
     .preview-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:clamp(18px,4vw,48px);background:rgba(10,18,22,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
     .preview-modal.hidden{display:none;}
-    .preview-card{position:relative;display:flex;align-items:center;justify-content:center;max-width:92vw;max-height:82vh;background:#111;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:8px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden;}
-    .preview-card img{display:block;width:auto;height:auto;max-width:calc(92vw - 16px);max-height:calc(82vh - 16px);border-radius:9px;background:#fff;object-fit:contain;user-select:none;}
+    .preview-card{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:center;width:min(980px,92vw);max-height:86vh;background:#111;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:10px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden;}
+    .preview-title{color:#fff;font-size:13px;font-weight:600;padding:2px 6px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .preview-content{display:flex;align-items:center;justify-content:center;min-height:220px;overflow:auto;border-radius:9px;background:#fff;}
+    .preview-content img{display:block;width:auto;height:auto;max-width:calc(92vw - 20px);max-height:calc(86vh - 72px);object-fit:contain;user-select:none;}
+    .preview-content iframe{display:block;width:100%;height:min(72vh,760px);border:0;background:#fff;}
+    .preview-text{width:100%;max-height:min(72vh,760px);margin:0;padding:18px;text-align:left;white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#111;background:#fff;}
+    .preview-info{padding:30px;text-align:center;color:var(--tx);font-size:13.5px;line-height:1.55;}
+    .preview-info-icon{font-size:44px;margin-bottom:12px;}
     .preview-close{position:fixed;top:22px;right:22px;width:38px;height:38px;border:0;border-radius:50%;background:white;color:var(--tx);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 8px 26px rgba(0,0,0,.28);z-index:10000;}
     .remove{border:0;background:#ef4444;color:white;border-radius:5px;padding:2px 7px;cursor:pointer;}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;}
@@ -182,7 +188,7 @@
 
             <label style="display:inline-flex;align-items:center;gap:5px;margin-top:12px;cursor:pointer;color:var(--g);font-weight:600;font-size:12.5px;">
               📁 Datei auswählen
-              <input id="fileInput" type="file" multiple accept="image/*,.pdf" style="display:none" />
+              <input id="fileInput" type="file" multiple accept="image/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx" style="display:none" />
             </label>
 
             <div class="file-list" id="fileList"></div>
@@ -198,9 +204,10 @@
   </div>
 
   <div id="previewModal" class="preview-modal hidden" aria-hidden="true">
-    <div class="preview-card" role="dialog" aria-modal="true" aria-label="Bildvorschau">
+    <div class="preview-card" role="dialog" aria-modal="true" aria-label="Anhangvorschau">
       <button type="button" class="preview-close" id="previewClose" aria-label="Vorschau schließen">×</button>
-      <img id="previewImage" alt="Große Bildvorschau" />
+      <div class="preview-title" id="previewTitle"></div>
+      <div class="preview-content" id="previewContent"></div>
     </div>
   </div>
 
@@ -271,20 +278,56 @@
       return `TK-${d.getFullYear().toString().slice(2)}${String(d.getMonth()+1).padStart(2,"0")}-${String(Math.floor(Math.random()*9000)+1000)}`;
     }
 
+
+    function getFileIcon(file) {
+      const name = (file.name || "").toLowerCase();
+      const type = file.type || "";
+      if (type.startsWith("image/")) return "🖼️";
+      if (type === "application/pdf" || name.endsWith(".pdf")) return "📕";
+      if (type.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".csv")) return "📄";
+      if (name.endsWith(".doc") || name.endsWith(".docx")) return "📝";
+      if (name.endsWith(".xls") || name.endsWith(".xlsx")) return "📊";
+      return "📎";
+    }
+
+    function getFileKind(file) {
+      const name = (file.name || "").toLowerCase();
+      const type = file.type || "";
+      if (type.startsWith("image/")) return "image";
+      if (type === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+      if (type.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".csv")) return "text";
+      if (name.endsWith(".doc") || name.endsWith(".docx")) return "word";
+      if (name.endsWith(".xls") || name.endsWith(".xlsx")) return "excel";
+      return "other";
+    }
+
+    function formatFileSize(bytes) {
+      if (!bytes) return "0 KB";
+      const units = ["B", "KB", "MB", "GB"];
+      let size = bytes;
+      let unit = 0;
+      while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit++;
+      }
+      return `${size.toFixed(size >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+    }
+
     function renderFileList() {
       $("fileList").innerHTML = files.map((file, i) => {
-        const isImage = file.type?.startsWith("image/");
-        const fileName = escapeHtml(file.name || "Screenshot");
-        const preview = isImage
-          ? `<button type="button" class="preview-btn" onclick="openPreview(${i})" title="Bild groß anzeigen" aria-label="${fileName} groß anzeigen">
-               <img class="file-thumb" src="${URL.createObjectURL(file)}" alt="Vorschau von ${fileName}" />
-             </button>`
-          : `<div class="file-placeholder" title="Keine Bildvorschau verfügbar">📄</div>`;
+        const kind = getFileKind(file);
+        const isImage = kind === "image";
+        const fileName = escapeHtml(file.name || "Anhang");
+        const previewThumb = isImage
+          ? `<img class="file-thumb" src="${URL.createObjectURL(file)}" alt="Vorschau von ${fileName}" />`
+          : `<div class="file-placeholder" title="Vorschau öffnen">${getFileIcon(file)}</div>`;
 
         return `
           <div class="file-item">
             <div class="file-meta">
-              ${preview}
+              <button type="button" class="preview-btn" onclick="openPreview(${i})" title="Vorschau öffnen" aria-label="${fileName} als Vorschau öffnen">
+                ${previewThumb}
+              </button>
               <span class="file-name">${fileName}</span>
             </div>
             <button type="button" class="remove" onclick="removeFile(${i})">x</button>
@@ -297,10 +340,43 @@
 
     window.openPreview = function(i) {
       const file = files[i];
-      if (!file || !file.type?.startsWith("image/")) return;
+      if (!file) return;
 
-      $("previewImage").src = URL.createObjectURL(file);
-      $("previewImage").alt = file.name ? `Große Vorschau von ${file.name}` : "Große Bildvorschau";
+      const kind = getFileKind(file);
+      const fileName = escapeHtml(file.name || "Anhang");
+      const url = URL.createObjectURL(file);
+
+      $("previewTitle").textContent = file.name || "Anhang";
+      $("previewContent").innerHTML = "";
+
+      if (kind === "image") {
+        $("previewContent").innerHTML = `<img src="${url}" alt="Große Vorschau von ${fileName}" />`;
+      } else if (kind === "pdf") {
+        $("previewContent").innerHTML = `<iframe src="${url}" title="PDF-Vorschau von ${fileName}"></iframe>`;
+      } else if (kind === "text") {
+        const reader = new FileReader();
+        reader.onload = () => {
+          $("previewContent").innerHTML = `<pre class="preview-text"></pre>`;
+          $("previewContent").querySelector(".preview-text").textContent = String(reader.result || "");
+        };
+        reader.onerror = () => {
+          $("previewContent").innerHTML = `<div class="preview-info"><div class="preview-info-icon">📄</div>Textvorschau konnte nicht geladen werden.</div>`;
+        };
+        reader.readAsText(file);
+        $("previewContent").innerHTML = `<div class="preview-info"><div class="preview-info-icon">📄</div>Textvorschau wird geladen…</div>`;
+      } else {
+        const label = kind === "word" ? "Word-Datei" : kind === "excel" ? "Excel-Datei" : "Datei";
+        $("previewContent").innerHTML = `
+          <div class="preview-info">
+            <div class="preview-info-icon">${getFileIcon(file)}</div>
+            <strong>${label}</strong><br>
+            ${fileName}<br>
+            ${formatFileSize(file.size)}<br><br>
+            Für diesen Dateityp kann der Browser keine echte Inhaltsvorschau direkt anzeigen.
+          </div>
+        `;
+      }
+
       $("previewModal").classList.remove("hidden");
       $("previewModal").setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
@@ -309,7 +385,8 @@
     function closePreview() {
       $("previewModal").classList.add("hidden");
       $("previewModal").setAttribute("aria-hidden", "true");
-      $("previewImage").removeAttribute("src");
+      $("previewTitle").textContent = "";
+      $("previewContent").innerHTML = "";
       document.body.style.overflow = "";
     }
 
