@@ -5,78 +5,663 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Runge Pharma | IT Ticket System</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" href="./logo.png" />
+  <link rel="shortcut icon" type="image/png" href="./logo.png" />
+  <link rel="apple-touch-icon" href="./logo.png" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root{
-      --g:#7aa290;--gd:#5d8a78;--gl:#e8f0ed;
-      --tx:#1a2e35;--mu:#64748b;--bd:#e2e8f0;
-      --bg:#f4f7f6;--wh:#ffffff;--r:10px;
+      --g:#7aa290;
+      --gd:#5d8a78;
+      --gl:#e8f0ed;
+      --tx:#1a2e35;
+      --mu:#64748b;
+      --bd:#dbe5df;
+      --bg:#f4f7f6;
+      --bg2:#ffffff;
+      --bg3:#edf4f1;
+      --wh:#ffffff;
+      --r:14px;
+      --sh:0 18px 45px rgba(26,46,53,.08);
     }
+
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
-    .topbar{background:var(--wh);border-bottom:1px solid var(--bd);height:56px;display:flex;align-items:center;padding:0 28px;}
-    .tb-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
-    .content{padding:28px 32px;}
-    .fw{max-width:860px;margin:0 auto;}
-    .fsec{background:var(--wh);border:1px solid var(--bd);border-radius:var(--r);padding:22px;margin-bottom:14px;}
-    .fstitle{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--g);margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--bd);}
-    .ig{margin-bottom:16px;}
-    .lbl{display:block;font-size:12.5px;font-weight:600;margin-bottom:7px;}
-    .req{color:#ef4444;margin-left:2px;}
-    .inp{width:100%;padding:9px 13px;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:13.5px;background:var(--wh);color:var(--tx);outline:none;}
-    .inp:focus{border-color:var(--g);}
-    textarea.inp{min-height:150px;resize:vertical;}
-    .rg,.cg{display:flex;flex-direction:column;gap:6px;}
-    .rw,.cw{display:flex;align-items:center;gap:9px;cursor:pointer;padding:7px 11px;border-radius:8px;border:1.5px solid var(--bd);font-size:13.5px;}
-    .rw:hover,.cw:hover{border-color:var(--g);background:var(--gl);}
-    .rw.sel,.cw.sel{border-color:var(--g);background:var(--gl);font-weight:500;}
-    input[type="radio"],input[type="checkbox"]{accent-color:var(--g);}
-    .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-    .pzone{border:2px dashed var(--bd);border-radius:10px;padding:22px;text-align:center;color:var(--mu);font-size:13px;background:var(--bg);cursor:pointer;}
-    .pzone:hover{border-color:var(--g);background:var(--gl);}
-    .pzone.has{border-color:var(--g);background:var(--gl);}
-    .file-list{margin-top:10px;font-size:12px;color:var(--tx);}
-    .file-item{background:white;border:1px solid var(--bd);padding:9px 10px;border-radius:7px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;}
-    .file-main{display:flex;align-items:center;gap:10px;min-width:0;flex:1;}
-    .file-meta{min-width:0;flex:1;}
-    .file-thumb{width:78px;height:58px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);background:#fff;flex-shrink:0;}
-    .file-thumb-pdf{object-fit:initial;overflow:hidden;pointer-events:none;}
-    .file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
-    .file-sub{font-size:11.5px;color:var(--mu);margin-top:2px;}
-    .file-placeholder{width:78px;height:58px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
-    .file-text-thumb{width:78px;height:58px;border-radius:6px;border:1px solid var(--bd);background:#fff;padding:5px;overflow:hidden;font:8px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--tx);white-space:pre-wrap;word-break:break-word;flex-shrink:0;}
-    .preview-btn{border:0;background:transparent;padding:0;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .preview-btn:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
-    .preview-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:clamp(18px,4vw,48px);background:rgba(10,18,22,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
-    .preview-modal.hidden{display:none;}
-    .preview-card{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:center;width:min(980px,92vw);max-height:86vh;background:#111;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:10px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden;}
-    .preview-title{color:#fff;font-size:13px;font-weight:600;padding:2px 6px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .preview-content{display:flex;align-items:center;justify-content:center;min-height:220px;overflow:auto;border-radius:9px;background:#fff;}
-    .preview-content img{display:block;width:auto;height:auto;max-width:calc(92vw - 20px);max-height:calc(86vh - 72px);object-fit:contain;user-select:none;}
-    .preview-content iframe{display:block;width:100%;height:min(72vh,760px);border:0;background:#fff;}
-    .preview-text{width:100%;max-height:min(72vh,760px);margin:0;padding:18px;text-align:left;white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#111;background:#fff;}
-    .preview-info{padding:30px;text-align:center;color:var(--tx);font-size:13.5px;line-height:1.55;}
-    .preview-info-icon{font-size:44px;margin-bottom:12px;}
-    .preview-close{position:fixed;top:22px;right:22px;width:38px;height:38px;border:0;border-radius:50%;background:white;color:var(--tx);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 8px 26px rgba(0,0,0,.28);z-index:10000;}
-    .remove{border:0;background:#ef4444;color:white;border-radius:5px;padding:2px 7px;cursor:pointer;}
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;}
-    .btn:disabled{opacity:.5;cursor:not-allowed;}
-    .btn-p{background:var(--g);color:#fff;}
-    .alert{padding:9px 13px;border-radius:8px;font-size:12.5px;margin-bottom:12px;}
-    .alert-e{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;}
-    .success{display:flex;flex-direction:column;align-items:center;padding:60px 20px;text-align:center;background:white;border:1px solid var(--bd);border-radius:var(--r);}
-    .success h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin:14px 0 8px;}
-    .success p{color:var(--mu);font-size:13.5px;line-height:1.6;max-width:420px;margin-bottom:20px;}
-    .hidden{display:none;}
-    @media(max-width:700px){.dgrid{grid-template-columns:1fr}.content{padding:18px}.inline-preview{max-width:100%}}
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+      font-family:'DM Sans',sans-serif;
+      background:var(--bg);
+      color:var(--tx);
+      min-height:100vh;
+    }
+
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(122,162,144,.32);border-radius:999px}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(122,162,144,.5)}
+
+    .topbar{
+      background:var(--wh);
+      border-bottom:1px solid var(--bd);
+      min-height:62px;
+      display:flex;
+      align-items:center;
+      padding:0 22px;
+      position:sticky;
+      top:0;
+      z-index:20;
+      box-shadow:0 2px 16px rgba(26,46,53,.04);
+    }
+
+    .tb-inner{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+
+    .top-logo{
+      width:28px;
+      height:28px;
+      object-fit:contain;
+      flex-shrink:0;
+      border-radius:6px;
+    }
+
+    .tb-title{
+      font-family:'Syne',sans-serif;
+      font-size:15px;
+      font-weight:800;
+      color:var(--tx);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .content{
+      padding:24px 18px 46px;
+    }
+
+    .fw{
+      width:min(680px,100%);
+      margin:0 auto;
+    }
+
+    .fsec{
+      background:var(--wh);
+      border:1px solid var(--bd);
+      border-radius:var(--r);
+      padding:20px;
+      margin-bottom:16px;
+      box-shadow:var(--sh);
+    }
+
+    .fstitle{
+      font-family:'Syne',sans-serif;
+      font-size:16px;
+      font-weight:800;
+      color:var(--g);
+      margin-bottom:18px;
+      padding-bottom:12px;
+      border-bottom:1px solid var(--bd);
+      display:flex;
+      align-items:center;
+      gap:9px;
+    }
+
+    .ico{
+      width:18px;
+      height:18px;
+      display:inline-block;
+      vertical-align:middle;
+      flex-shrink:0;
+      stroke:currentColor;
+      fill:none;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+
+    .ico-sm{
+      width:15px;
+      height:15px;
+    }
+
+    .ig{
+      margin-bottom:16px;
+    }
+
+    .ig:last-child{
+      margin-bottom:0;
+    }
+
+    .lbl{
+      display:block;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--g);
+      margin-bottom:7px;
+    }
+
+    .req{
+      color:#ef4444;
+      margin-left:3px;
+    }
+
+    .inp{
+      width:100%;
+      min-height:38px;
+      padding:9px 13px;
+      border:1.5px solid var(--bd);
+      border-radius:8px;
+      font-family:inherit;
+      font-size:13.5px;
+      font-weight:500;
+      background:var(--wh);
+      color:var(--tx);
+      outline:none;
+      transition:border-color .15s, box-shadow .15s, background .15s;
+    }
+
+    .inp::placeholder{
+      color:#8a98a7;
+    }
+
+    .inp:focus{
+      border-color:var(--g);
+      box-shadow:0 0 0 3px rgba(122,162,144,.16);
+      background:#fff;
+    }
+
+    textarea.inp{
+      min-height:140px;
+      resize:vertical;
+      line-height:1.5;
+    }
+
+    .dgrid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+
+    .rg,
+    .cg{
+      display:flex;
+      flex-direction:column;
+      gap:9px;
+    }
+
+    .rw,
+    .cw{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      cursor:pointer;
+      padding:10px 13px;
+      border-radius:9px;
+      border:1.5px solid var(--bd);
+      font-size:13.5px;
+      font-weight:700;
+      color:var(--tx);
+      background:var(--wh);
+      transition:border-color .15s, background .15s, color .15s, box-shadow .15s;
+      user-select:none;
+    }
+
+    .rw:hover,
+    .cw:hover{
+      border-color:var(--g);
+      background:var(--gl);
+    }
+
+    .rw.sel,
+    .cw.sel{
+      border-color:var(--g);
+      background:var(--gl);
+      color:var(--tx);
+      box-shadow:0 0 0 1px rgba(122,162,144,.1) inset;
+    }
+
+    .rw input,
+    .cw input{
+      flex-shrink:0;
+      margin:0;
+    }
+
+    .option-text{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+
+    input[type="radio"],
+    input[type="checkbox"]{
+      accent-color:var(--g);
+    }
+
+    .pzone{
+      border:2px dashed var(--bd);
+      border-radius:12px;
+      padding:24px 18px;
+      text-align:center;
+      color:var(--mu);
+      font-size:13px;
+      background:var(--bg);
+      cursor:pointer;
+      transition:border-color .15s, background .15s, color .15s;
+    }
+
+    .pzone:hover{
+      border-color:var(--g);
+      background:var(--gl);
+      color:var(--tx);
+    }
+
+    .pzone.has{
+      border-color:var(--g);
+      background:var(--gl);
+    }
+
+    .pzone-icon{
+      width:32px;
+      height:32px;
+      color:var(--g);
+      margin:0 auto 10px;
+    }
+
+    .file-pick-label{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      margin-top:13px;
+      cursor:pointer;
+      color:var(--g);
+      font-weight:800;
+      font-size:12.5px;
+      border:1px solid rgba(122,162,144,.35);
+      background:#fff;
+      border-radius:999px;
+      padding:7px 12px;
+      transition:background .15s, border-color .15s;
+    }
+
+    .file-pick-label:hover{
+      background:var(--gl);
+      border-color:var(--g);
+    }
+
+    .file-list{
+      margin-top:12px;
+      font-size:12px;
+      color:var(--tx);
+    }
+
+    .file-item{
+      background:white;
+      border:1px solid var(--bd);
+      padding:9px 10px;
+      border-radius:9px;
+      margin-top:8px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      text-align:left;
+      box-shadow:0 4px 14px rgba(26,46,53,.04);
+    }
+
+    .file-main{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      flex:1;
+      cursor:pointer;
+    }
+
+    .file-meta{
+      min-width:0;
+      flex:1;
+    }
+
+    .file-thumb{
+      width:78px;
+      height:58px;
+      object-fit:cover;
+      border-radius:7px;
+      border:1px solid var(--bd);
+      background:#fff;
+      flex-shrink:0;
+    }
+
+    .file-thumb-pdf{
+      object-fit:initial;
+      overflow:hidden;
+      pointer-events:none;
+    }
+
+    .file-name{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-weight:800;
+      color:var(--tx);
+    }
+
+    .file-sub{
+      font-size:11.5px;
+      color:var(--mu);
+      margin-top:2px;
+      font-weight:600;
+    }
+
+    .file-placeholder{
+      width:78px;
+      height:58px;
+      border-radius:7px;
+      border:1px solid var(--bd);
+      background:var(--bg);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      flex-shrink:0;
+    }
+
+    .file-text-thumb{
+      width:78px;
+      height:58px;
+      border-radius:7px;
+      border:1px solid var(--bd);
+      background:#fff;
+      padding:5px;
+      overflow:hidden;
+      font:8px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace;
+      color:var(--tx);
+      white-space:pre-wrap;
+      word-break:break-word;
+      flex-shrink:0;
+    }
+
+    .preview-btn{
+      border:0;
+      background:transparent;
+      padding:0;
+      cursor:pointer;
+      border-radius:7px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+
+    .preview-btn:focus-visible{
+      outline:2px solid var(--g);
+      outline-offset:2px;
+    }
+
+    .preview-modal{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(18px,4vw,48px);
+      background:rgba(10,18,22,.62);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+
+    .preview-modal.hidden{
+      display:none;
+    }
+
+    .preview-card{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      justify-content:center;
+      width:min(980px,92vw);
+      max-height:86vh;
+      background:#111;
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:14px;
+      padding:10px;
+      box-shadow:0 24px 80px rgba(0,0,0,.45);
+      overflow:hidden;
+    }
+
+    .preview-title{
+      color:#fff;
+      font-size:13px;
+      font-weight:700;
+      padding:2px 6px 10px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .preview-content{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:220px;
+      overflow:auto;
+      border-radius:9px;
+      background:#fff;
+    }
+
+    .preview-content img{
+      display:block;
+      width:auto;
+      height:auto;
+      max-width:calc(92vw - 20px);
+      max-height:calc(86vh - 72px);
+      object-fit:contain;
+      user-select:none;
+    }
+
+    .preview-content iframe{
+      display:block;
+      width:100%;
+      height:min(72vh,760px);
+      border:0;
+      background:#fff;
+    }
+
+    .preview-text{
+      width:100%;
+      max-height:min(72vh,760px);
+      margin:0;
+      padding:18px;
+      text-align:left;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;
+      color:#111;
+      background:#fff;
+    }
+
+    .preview-info{
+      padding:30px;
+      text-align:center;
+      color:var(--tx);
+      font-size:13.5px;
+      line-height:1.55;
+    }
+
+    .preview-info-icon{
+      font-size:44px;
+      margin-bottom:12px;
+    }
+
+    .preview-close{
+      position:fixed;
+      top:22px;
+      right:22px;
+      width:38px;
+      height:38px;
+      border:0;
+      border-radius:50%;
+      background:white;
+      color:var(--tx);
+      font-size:24px;
+      line-height:1;
+      cursor:pointer;
+      box-shadow:0 8px 26px rgba(0,0,0,.28);
+      z-index:10000;
+    }
+
+    .remove{
+      border:0;
+      background:#ef4444;
+      color:white;
+      border-radius:7px;
+      padding:4px 8px;
+      cursor:pointer;
+      font-weight:800;
+      line-height:1;
+      flex-shrink:0;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:9px 16px;
+      border-radius:9px;
+      font-size:13px;
+      font-weight:800;
+      border:none;
+      cursor:pointer;
+      font-family:inherit;
+      transition:transform .12s, filter .12s, opacity .12s;
+    }
+
+    .btn:hover:not(:disabled){
+      transform:translateY(-1px);
+      filter:brightness(1.03);
+    }
+
+    .btn:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .btn-p{
+      background:var(--g);
+      color:#fff;
+    }
+
+    .alert{
+      padding:10px 13px;
+      border-radius:9px;
+      font-size:12.5px;
+      font-weight:700;
+      margin-bottom:14px;
+    }
+
+    .alert-e{
+      background:#fee2e2;
+      color:#dc2626;
+      border:1px solid #fca5a5;
+    }
+
+    .success{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:60px 20px;
+      text-align:center;
+      background:white;
+      border:1px solid var(--bd);
+      border-radius:var(--r);
+      box-shadow:var(--sh);
+    }
+
+    .success-icon{
+      width:48px;
+      height:48px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--gl);
+      color:var(--g);
+      margin-bottom:14px;
+    }
+
+    .success h2{
+      font-family:'Syne',sans-serif;
+      font-size:22px;
+      font-weight:800;
+      margin:0 0 8px;
+    }
+
+    .success p{
+      color:var(--mu);
+      font-size:13.5px;
+      line-height:1.6;
+      max-width:420px;
+      margin-bottom:20px;
+    }
+
+    .hidden{
+      display:none;
+    }
+
+    @media(max-width:700px){
+      .topbar{
+        padding:0 16px;
+      }
+
+      .content{
+        padding:18px 12px 34px;
+      }
+
+      .fsec{
+        padding:18px;
+      }
+
+      .dgrid{
+        grid-template-columns:1fr;
+        gap:0;
+      }
+
+      .file-item{
+        align-items:flex-start;
+      }
+
+      .file-thumb,
+      .file-placeholder,
+      .file-text-thumb{
+        width:64px;
+        height:50px;
+      }
+    }
   </style>
 </head>
 
 <body>
   <div class="topbar">
-    <div class="tb-title">Runge Pharma Ticket System</div>
+    <div class="tb-inner">
+      <img class="top-logo" src="./logo.png" alt="Runge Pharma Logo" onerror="this.style.display='none'" />
+      <div class="tb-title">Runge Pharma Ticket System</div>
+    </div>
   </div>
 
   <div class="content">
@@ -84,38 +669,88 @@
       <form id="ticketForm">
 
         <div class="fsec">
-          <div class="fstitle">📝 Neues IT-Ticket</div>
+          <div class="fstitle">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Neues IT-Ticket
+          </div>
 
           <div id="formErr" class="alert alert-e hidden"></div>
 
           <div class="dgrid">
             <div class="ig">
-              <label class="lbl">Dein Name<span class="req">*</span></label>
+              <label class="lbl" for="name">Dein Name<span class="req">*</span></label>
               <input class="inp" id="name" required placeholder="Max Mustermann" />
             </div>
             <div class="ig">
-              <label class="lbl">E-Mail<span class="req">*</span></label>
+              <label class="lbl" for="email">E-Mail<span class="req">*</span></label>
               <input class="inp" id="email" required type="email" placeholder="name@rungepharma.de" />
             </div>
           </div>
 
           <div class="ig">
-            <label class="lbl">Kurztitel<span class="req">*</span></label>
+            <label class="lbl" for="titel">Kurztitel<span class="req">*</span></label>
             <input class="inp" id="titel" required placeholder="Kurze Beschreibung des Problems" />
           </div>
 
           <div class="ig">
             <label class="lbl">Art des Anliegens<span class="req">*</span></label>
             <div class="rg">
-              <label class="rw"><input type="radio" name="type" value="🔧 Technische Störung" required /> 🔧 Technische Störung</label>
-              <label class="rw"><input type="radio" name="type" value="💻 Gerät ausleihen" /> 💻 Gerät ausleihen</label>
-              <label class="rw"><input type="radio" name="type" value="💡 Änderung / Anfrage" /> 💡 Änderung / Anfrage</label>
+              <label class="rw">
+                <input type="radio" name="type" value="Technische Störung" required />
+                <span class="option-text">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                  </svg>
+                  Technische Störung
+                </span>
+              </label>
+
+              <label class="rw">
+                <input type="radio" name="type" value="Gerät ausleihen" />
+                <span class="option-text">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="2" y1="20" x2="22" y2="20"></line>
+                  </svg>
+                  Gerät ausleihen
+                </span>
+              </label>
+
+              <label class="rw">
+                <input type="radio" name="type" value="Änderung / Anfrage" />
+                <span class="option-text">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 22h4"></path>
+                    <path d="M12 2v1"></path>
+                    <path d="M12 18v1"></path>
+                    <path d="M4.93 4.93l.71.71"></path>
+                    <path d="M18.36 18.36l.71.71"></path>
+                    <path d="M2 12h1"></path>
+                    <path d="M21 12h1"></path>
+                    <path d="M4.93 19.07l.71-.71"></path>
+                    <path d="M18.36 5.64l.71-.71"></path>
+                    <circle cx="12" cy="12" r="4"></circle>
+                  </svg>
+                  Änderung / Anfrage
+                </span>
+              </label>
             </div>
           </div>
         </div>
 
         <div id="stoerung" class="fsec hidden">
-          <div class="fstitle">🔧 Störungsdetails</div>
+          <div class="fstitle">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+            Störungsdetails
+          </div>
 
           <div class="ig">
             <label class="lbl">Kategorie<span class="req">*</span></label>
@@ -123,7 +758,7 @@
           </div>
 
           <div class="ig">
-            <label class="lbl">Problembeschreibung<span class="req">*</span></label>
+            <label class="lbl" for="desc">Problembeschreibung<span class="req">*</span></label>
             <textarea class="inp" id="desc" placeholder="Bitte ausführlich beschreiben…"></textarea>
           </div>
 
@@ -140,7 +775,13 @@
         </div>
 
         <div id="geraet" class="fsec hidden">
-          <div class="fstitle">💻 Gerätedetails</div>
+          <div class="fstitle">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="2" y1="20" x2="22" y2="20"></line>
+            </svg>
+            Gerätedetails
+          </div>
 
           <div class="ig">
             <label class="lbl">Gewünschtes Gerät<span class="req">*</span></label>
@@ -154,18 +795,32 @@
 
           <div class="dgrid">
             <div class="ig">
-              <label class="lbl">Von</label>
+              <label class="lbl" for="von">Von</label>
               <input class="inp" type="date" id="von" />
             </div>
             <div class="ig">
-              <label class="lbl">Bis</label>
+              <label class="lbl" for="bis">Bis</label>
               <input class="inp" type="date" id="bis" />
             </div>
           </div>
         </div>
 
         <div id="change" class="fsec hidden">
-          <div class="fstitle">💡 Anfrage-Details</div>
+          <div class="fstitle">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 22h4"></path>
+              <path d="M12 2v1"></path>
+              <path d="M12 18v1"></path>
+              <path d="M4.93 4.93l.71.71"></path>
+              <path d="M18.36 18.36l.71.71"></path>
+              <path d="M2 12h1"></path>
+              <path d="M21 12h1"></path>
+              <path d="M4.93 19.07l.71-.71"></path>
+              <path d="M18.36 5.64l.71-.71"></path>
+              <circle cx="12" cy="12" r="4"></circle>
+            </svg>
+            Anfrage-Details
+          </div>
 
           <div class="ig">
             <label class="lbl">Art der Anfrage<span class="req">*</span></label>
@@ -173,7 +828,7 @@
           </div>
 
           <div class="ig">
-            <label class="lbl">Beschreibung<span class="req">*</span></label>
+            <label class="lbl" for="changeDesc">Beschreibung<span class="req">*</span></label>
             <textarea class="inp" id="changeDesc" placeholder="Bitte ausführlich beschreiben…"></textarea>
           </div>
 
@@ -184,15 +839,27 @@
         </div>
 
         <div id="attachments" class="fsec hidden">
-          <div class="fstitle">📎 Screenshots / Anhänge optional</div>
+          <div class="fstitle">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+            </svg>
+            Screenshots / Anhänge optional
+          </div>
 
           <div class="pzone" id="dropzone">
-            <div style="font-size:28px;margin-bottom:8px">📋</div>
-            <div><strong>Strg+V</strong> für Screenshot einfügen</div>
-            <div style="font-size:11.5px;margin-top:5px;opacity:.7">Oder Datei auswählen / Drag & Drop</div>
+            <svg class="ico pzone-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
 
-            <label style="display:inline-flex;align-items:center;gap:5px;margin-top:12px;cursor:pointer;color:var(--g);font-weight:600;font-size:12.5px;">
-              📁 Datei auswählen
+            <div><strong>Strg+V</strong> für Screenshot einfügen</div>
+            <div style="font-size:11.5px;margin-top:5px;opacity:.75">Oder Datei auswählen / Drag & Drop</div>
+
+            <label class="file-pick-label">
+              <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Datei auswählen
               <input id="fileInput" type="file" multiple accept="image/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx" style="display:none" />
             </label>
 
@@ -200,8 +867,12 @@
           </div>
         </div>
 
-        <button id="submitBtn" type="submit" class="btn btn-p hidden" style="width:100%;justify-content:center;padding:13px;font-size:14px;">
-          ✉️ Ticket absenden
+        <button id="submitBtn" type="submit" class="btn btn-p hidden" style="width:100%;padding:13px;font-size:14px;">
+          <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          Ticket absenden
         </button>
 
       </form>
@@ -225,7 +896,7 @@
     const DEVS = ["Laptop","Bildschirm","2 Bildschirme","Maus","Tastatur","Headset","Kamera","Kompletter Arbeitsplatz","Sonstiges"];
     const PURPOSES = ["Im Haus","Außendienst","Home Office","Sonstiges"];
     const REQS = ["Verbesserungsvorschlag","Neue Software / Tool","Hardwarewunsch","Prozessänderung","Beschwerde","Sonstiges"];
-    const AFFECTED = ["Nur ich","Meine Abteilung","Mehrere Abteilungen","Ganzes Unternehmen"];
+    const AFFECTED = ["Nur ich","Mein Computer","Meine Abteilung","Mehrere Abteilungen","Ganzes Unternehmen"];
     const SINCE = ["Heute","Seit gestern","Seit einigen Tagen","Seit einer Woche","Schon länger"];
 
     let files = [];
@@ -266,7 +937,8 @@
       const el = $(containerId);
       el.innerHTML = arr.map(v => `
         <label class="${type === "checkbox" ? "cw" : "rw"}">
-          <input type="${type}" name="${name}" value="${v}" /> ${v}
+          <input type="${type}" name="${name}" value="${escapeHtml(v)}" />
+          <span>${escapeHtml(v)}</span>
         </label>
       `).join("");
     }
@@ -274,7 +946,7 @@
     function refreshSelectedStyles() {
       document.querySelectorAll(".rw,.cw").forEach(label => {
         const input = label.querySelector("input");
-        label.classList.toggle("sel", input.checked);
+        label.classList.toggle("sel", Boolean(input && input.checked));
       });
     }
 
@@ -282,7 +954,6 @@
       const d = new Date();
       return `TK-${d.getFullYear().toString().slice(2)}${String(d.getMonth()+1).padStart(2,"0")}-${String(Math.floor(Math.random()*9000)+1000)}`;
     }
-
 
     function getFileIcon(file) {
       const name = (file.name || "").toLowerCase();
@@ -444,7 +1115,7 @@
     };
 
     function addFiles(newFiles) {
-      files.push(...Array.from(newFiles));
+      files.push(...Array.from(newFiles || []));
       renderFileList();
     }
 
@@ -473,14 +1144,14 @@
       return urls;
     }
 
-    function resetForm() {
-      location.reload();
-    }
-
     function showSuccess() {
       $("app").innerHTML = `
         <div class="success">
-          <div style="font-size:40px;margin-bottom:14px">✅</div>
+          <div class="success-icon">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
           <h2>Ticket eingereicht!</h2>
           <p>Wir haben deine Anfrage erhalten und werden uns schnellstmöglich darum kümmern.</p>
           <button class="btn btn-p" onclick="location.reload()">Weiteres Ticket einreichen</button>
@@ -503,9 +1174,9 @@
 
       const type = getRadio("type");
 
-      $("stoerung").classList.toggle("hidden", type !== "🔧 Technische Störung");
-      $("geraet").classList.toggle("hidden", type !== "💻 Gerät ausleihen");
-      $("change").classList.toggle("hidden", type !== "💡 Änderung / Anfrage");
+      $("stoerung").classList.toggle("hidden", type !== "Technische Störung");
+      $("geraet").classList.toggle("hidden", type !== "Gerät ausleihen");
+      $("change").classList.toggle("hidden", type !== "Änderung / Anfrage");
       $("attachments").classList.toggle("hidden", !type);
       $("submitBtn").classList.toggle("hidden", !type);
 
@@ -570,14 +1241,14 @@
         return showError("Bitte fülle alle Pflichtfelder aus.");
       }
 
-      if (type === "🔧 Technische Störung") {
+      if (type === "Technische Störung") {
         if (!cat) return showError("Bitte wähle eine Kategorie aus.");
         if (!desc) return showError("Bitte beschreibe das Problem.");
         if (!since) return showError("Bitte gib an, seit wann die Störung besteht.");
         if (!affected) return showError("Bitte wähle aus, wer betroffen ist.");
       }
 
-      if (type === "💻 Gerät ausleihen") {
+      if (type === "Gerät ausleihen") {
         if (devs.length === 0) return showError("Bitte wähle mindestens ein Gerät aus.");
         if (!purpose) return showError("Bitte gib den Zweck der Nutzung an.");
         if (purpose !== "Home Office") {
@@ -586,14 +1257,20 @@
         }
       }
 
-      if (type === "💡 Änderung / Anfrage") {
+      if (type === "Änderung / Anfrage") {
         if (!reqtype) return showError("Bitte wähle die Art der Anfrage aus.");
         if (!changeDesc) return showError("Bitte beschreibe die Anfrage.");
         if (!changeAff) return showError("Bitte wähle aus, wer betroffen ist.");
       }
 
       $("submitBtn").disabled = true;
-      $("submitBtn").textContent = "⏳ Wird gesendet…";
+      $("submitBtn").innerHTML = `
+        <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Wird gesendet…
+      `;
 
       try {
         const imgUrls = await uploadFiles();
@@ -634,7 +1311,13 @@
       } catch (err) {
         showError("Ticket konnte nicht gespeichert werden: " + err.message);
         $("submitBtn").disabled = false;
-        $("submitBtn").textContent = "✉️ Ticket absenden";
+        $("submitBtn").innerHTML = `
+          <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          Ticket absenden
+        `;
         console.error(err);
       }
     });
